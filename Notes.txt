@@ -29,12 +29,9 @@ and share them publicly or privately.
 
 "nginx"
 engine x is a open source high performance "WEB SERVER, REVERSE PROXY & LOAD BALANCER" made to solve 10K concurrent web connections at the same time
-'WEB SERVER:'the program that takes requests from a web browser and sends back the files (like text and pictures) needed to display a website.
-
-Why container is used in Inception:
-- isolation (each service separated)
-- reproducibility (same setup everywhere)
-- easy networking between services (containers talk to each other)
+'WEB SERVER:'the program that "takes requests from a web browser and sends back" the files (like text and pictures) needed to display a website.
+'REVERSE PROXY:' An "intermediate server" that sits in front of backend applications and forwards client requests to them.
+'LOAD BALANCER:'  distributes network traffic across a cluster of servers.
 
 "DOCKER COMMANDS"
 - check docker in your machine: docker --version
@@ -49,3 +46,20 @@ Why container is used in Inception:
 - Show running+stopped containers: docker ps -a
 - pause running container: docker stop <id>
 - delete container: docker rm <id>
+- create containers and start them: (be in the .yml file containing directory) docker compose up
+                                  up means build + create + start for everything described in the compose file.
+
+
+
+"Why container is used in Inception:"
+- isolation (each service separated)
+- reproducibility (same setup everywhere)
+- easy networking between services (containers talk to each other)
+
+"yml"
+A .yml (or .yaml) file is just a text file used for configuration.It defines your three mandatory services (NGINX, WordPress, and MariaDB) and 
+gives instructions on how to build them.
+
+"MariaDB"
+Open source database management system
+

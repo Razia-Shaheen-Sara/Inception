@@ -1,38 +1,38 @@
-##DOCKER"
+## DOCKER"
 Docker is an open-source containerization platform that simplifies application deployment by packaging software and its dependencies into a standardized unit called a container.
 Unlike traditional virtual machines, Docker containers share the host OS kernel, making them more efficient and lightweight.
 Why it exist: 
   -Reduce compatability issues
   -enhances portability across various platforms
 
-##DOCKER IMAGE
+## DOCKER IMAGE
 Docker images are the fundamental building blocks of containers.They are read-only "templates" containing everything needed to run an application, 
 including the operating system, application code, runtime, and dependencies.
 
 Images are built using a Dockerfile, which defines the instructions for creating an image layer by layer.
 
 
-##DOCKER CONTAINER
+## DOCKER CONTAINER
 A Docker container is a "running instance" of a Docker image. Containers provide an "isolated runtime environment" where applications can run without 
 interfering with each other or the host system.Each container has its own filesystem, networking, and process space but shares the host kernel(core manager inside OS).
 Containers share kernel only, not OS or memory directly
 
 
-##DOCKER COMPOSE
+## DOCKER COMPOSE
 Docker Compose is a tool that simplifies the management of "multi-container" applications.Instead of running multiple docker run commands, you can define an entire application stack 
 using a docker-compose.yml file and deploy it with a single command.
 
-##DOCKER HUB
+## DOCKER HUB
 Docker Hub is a cloud-based "public image registry" service for finding, storing, and distributing container images. Users can push custom images to Docker Hub 
 and share them publicly or privately.
 
-##nginx
+## nginx
 engine x is a open source high performance "WEB SERVER, REVERSE PROXY & LOAD BALANCER" designed to handle 10,000 concurrent connections smoothly.
 WEB SERVER (The Fetcher): Takes requests from a browser and pulls files (text/images) directly from its own local storage to send back.
 REVERSE PROXY (The Middleman): Does not own the files. It intercepts requests and forwards them to a separate backend application/server to get the answer.
 LOAD BALANCER (The Traffic Cop): Distributes network traffic across multiple different servers so no single machine crashes.
 
-##DOCKER COMMANDS
+## DOCKER COMMANDS
 - check docker in your machine: docker --version
 - test if it works: docker run hello-world
                     it checks if hello- world image exist, if not, downloads from Docker hub, makes a container from that image, 
@@ -50,15 +50,15 @@ LOAD BALANCER (The Traffic Cop): Distributes network traffic across multiple dif
 
 
 
-##Why container is used in Inception:
+## Why container is used in Inception:
 - isolation (each service separated)
 - reproducibility (same setup everywhere)
 - easy networking between services (containers talk to each other)
 
-##yml
+## yml
 A .yml (or .yaml) file is just a text file used for configuration.It defines your three mandatory services (NGINX, WordPress, and MariaDB) and 
 gives instructions on how to build them.
 
-##MariaDB
+## MariaDB
 Open source database management system
 

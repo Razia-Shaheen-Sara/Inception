@@ -1,4 +1,4 @@
-## DOCKER"
+## DOCKER
 Docker is an open-source **containerization** platform that simplifies application deployment by packaging software and its dependencies into a standardized unit called a container.
 Unlike traditional virtual machines, Docker containers share the host OS kernel, making them more efficient and lightweight.  
 Why it exist:  
@@ -131,6 +131,7 @@ Dockerfile builds one image vs docker-compose Run MULTIPLE containers together, 
 
 
 ## DOCKER COMMANDS
+### Basic commands:
 - **Check docker in your machine:** docker --version
 - **Test if it works:** docker run hello-world
                     it checks if hello- world image exist, if not, downloads from Docker hub, makes a container from that image, 
@@ -143,6 +144,8 @@ Dockerfile builds one image vs docker-compose Run MULTIPLE containers together, 
 - **Show running+stopped containers:** docker ps -a
 - **pause running container:** docker stop <id>
 - **delete container:** docker rm <id>
+
+### Building and running
 - **create containers and start them:** 1. make a Dockerfile (stay in that directory)  
                                         2. docker build -t <name> . 
                                         3. docker run <name>
@@ -156,6 +159,17 @@ bash          -> start bash shell
 - **Inside that container install curl**:apt-get update && apt-get install -y curl
 - **Check if curl installed**:curl --version
 - **exit container**:exit
+
+
+### Mariadb
+- **build mariadb**: write Dockerfile in the srcs/requirements/mairadb
+                    cd srcs/requirements/mariadb  
+                    docker build -t test-mariadb .  
+                    docker run -it test-mariadb bash  
+- **Check if install worked/Find system database**(users, permissions): (be INSIDE THE CONTAINER) which mysqld_safe  
+  which = search for a command in the current system PATH
+- **Does Mariadb data exist?** ls /var/lib/mysql  
+- **Show configaration files** cat /etc/mysql/my.cnf
 
 
 

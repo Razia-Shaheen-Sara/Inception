@@ -1,7 +1,7 @@
 ## DOCKER"
 Docker is an open-source **containerization** platform that simplifies application deployment by packaging software and its dependencies into a standardized unit called a container.
 Unlike traditional virtual machines, Docker containers share the host OS kernel, making them more efficient and lightweight.
-Why it exist:
+Why it exist:  
 -Reduce compatability issues
 -enhances portability across various platforms
 

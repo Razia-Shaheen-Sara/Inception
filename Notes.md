@@ -42,7 +42,10 @@ A .yml (or .yaml) file is just a text file used for configuration.It defines you
 gives instructions on how to build them.
 
 ## MariaDB
-Open source database management system
+Open source database management system.  
+### mysqld_safe 
+It is a wrapper script that starts the MariaDB/MySQL server (mysqld) safely. It can:restart the server if it crashes, set up logging
+ and handle some startup checks
 
 ## Inception Data Flow Architecture
 
@@ -133,6 +136,7 @@ Dockerfile builds one image vs docker-compose Run MULTIPLE containers together, 
 ## DOCKER COMMANDS
 ### Basic commands:
 - **Check docker in your machine:** docker --version
+- **Check docker images:** docker images or docker image ls
 - **Test if it works:** docker run hello-world
                     it checks if hello- world image exist, if not, downloads from Docker hub, makes a container from that image, 
                       Inside that container, there is a tiny program whose only job is: print the hello message and exit
@@ -146,9 +150,12 @@ Dockerfile builds one image vs docker-compose Run MULTIPLE containers together, 
 - **delete container:** docker rm <id>
 
 ### Building and running
-- **create containers and start them:** 1. make a Dockerfile (stay in that directory)  
-                                        2. docker build -t <name> . 
-                                        3. docker run <name>
+- **create images:** 1. make a Dockerfile (stay in that directory)  
+                    2. docker build -t <name> . 
+-**check if image created:** docker images or docker image ls
+- **create container from image and start it:**docker run <name> (it will start and die immediately)(Every run create new container)
+- **Show running containers:** docker ps 
+- **Show running+stopped containers:** docker ps -a
 - **create multiple containers and start them:** (make a .yml file be in the .yml file containing directory) docker compose up
                                   up means build + create + start for everything described in the compose file.
 - **Pull and run a simple container:** docker run -it debian:bullseye bash  
@@ -159,18 +166,153 @@ bash          -> start bash shell
 - **Inside that container install curl**:apt-get update && apt-get install -y curl
 - **Check if curl installed**:curl --version
 - **exit container**:exit
+- **start a process inside a running container** docker exec ...
 
 
 ### Mariadb
-- **build mariadb**: write Dockerfile in the srcs/requirements/mairadb
+- MariaDB -the database server(OLD name- MySQL)
+- mysqld -the process/database that IS MariaDB running
+- mysql - the client tool to connect and send commands
+- SQL - the language of those commands
+- mysqld_safe - old wrapper script that starts mysqld
+
+- **create mariadb image**: write Dockerfile in the srcs/requirements/mairadb 
                     cd srcs/requirements/mariadb  
                     docker build -t test-mariadb .  
-                    docker run -it test-mariadb bash  
-- **Check if install worked/Find system database**(users, permissions): (be INSIDE THE CONTAINER) which mysqld_safe  
-  which = search for a command in the current system PATH
-- **Does Mariadb data exist?** ls /var/lib/mysql  
-- **Show configaration files** cat /etc/mysql/my.cnf
+- **Check if install worked** docker image ls
+- **Create container and start bash**:docker run -it test-mariadb bash  (Here, bash is running **INSIDE** mariadb container. these both commands are put together cause container keeps dying if there is nothing keeping it alive)(P.S. Every run create new container)  
 
+
+- - **INSIDE MARIADB CONTAINER**
+
+- - **Layer model (important understanding)**
+ [1] FILESYSTEM LAYER (data on disk)
+      /var/lib/mysql
+      → database files stored here (inside container path)
+      → physically stored on HOST via Docker filesystem
+
+  [2] SERVER LAYER (database engine)
+      mariadbd (or mysqld)
+      → runs database system
+      → reads/writes /var/lib/mysql
+      → handles SQL requests
+
+  [3] CLIENT LAYER (user tool)
+      mysql -u root
+      → connects to server
+      → sends SQL queries
+
+  **Flow:**
+      mysql (client) → mariadbd (server) → /var/lib/mysql (data)  
+
+- - **just see what is inside**: ls
+
+- - **Check if MariaDB data directory is initialized**
+  ls /var/lib/mysql
+  (If you see folders like mysql, performance_schema → it is initialized)
+  (If empty → not initialized)
+  {/var/lib/mysql contains MariaDB system databases and engine files.
+  It is created and populated during database initialization (mysql_install_db or first server startup).}
+- - **Find system database tools**(users, permissions): which mysqld_safe  
+  (which = search for a command in the current system PATH)
+- - **Show configaration files** cat /etc/mysql/my.cnf
+- - - - **START SERVER (MUST RUN BEFORE CLIENT)** mysqld_safe--skip-networking &
+(mysqld_safe = wrapper that starts MariaDB server
+--skip-networking = disables remote TCP connections (only local socket)
+& = run in background so terminal stays usable) - So it Starts Mariadb in the background
+
+- - **CONNECT CLIENT TO SERVER**
+
+  mysql -u root
+
+  → opens SQL shell; now we are inside sql shell
+  → connects the client "mysql" to running mariadbd server
+
+
+- - **TEST CONNECTION (inside SQL shell)**
+
+  SHOW DATABASES;
+  SELECT 1;
+  EXIT;(exit sql shell only)
+
+- - **INSIDE MARIADB CONTAINER: DATABASE + USER SETUP (MANUAL TEST)**
+
+- - **Purpose of this step**
+  This simulates what the Inception entrypoint script will automate.
+  On container startup, the script will:
+  → create database
+  → create users
+  → set permissions
+  → allow WordPress connection
+
+`` --- (Still inside the running container) 
+mysql -u root <<EOF
+CREATE DATABASE mydb;
+CREATE USER 'wpuser'@'%' IDENTIFIED BY 'somepassword';
+GRANT ALL PRIVILEGES ON mydb.* TO 'wpuser'@'%';
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpass';
+FLUSH PRIVILEGES;
+EOF
+
+- - **Verify it worked**
+mysql -u wpuser -psomepassword mydb -e "SHOW TABLES;" ``
+
+- - - **Open MariaDB shell as root**
+  mysql -u root
+
+- - - **Create database**
+  CREATE DATABASE IF NOT EXISTS mydb;
+
+  (mydb = database WordPress will use)
+
+- - - **Create WordPress user**
+  CREATE USER 'wpuser'@'%' IDENTIFIED BY 'somepassword';
+
+  ('%' = allow connections from any host inside Docker network)
+
+- - - **Give permissions**
+  GRANT ALL PRIVILEGES ON mydb.* TO 'wpuser'@'%';
+
+  (allows full access to only this database)
+
+- - - **Change root password**
+  ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpass';
+
+- - -**Apply changes**
+  FLUSH PRIVILEGES;
+
+- - **Test new user login**
+  mysql -u wpuser -psomepassword mydb -e "SHOW TABLES;"
+
+- - **Key idea**
+  These manual commands = what will later become an automatic entrypoint script in Docker.
+  Without this step WordPress cannot connect to MariaDB.
+
+
+
+## MariaDB container test
+- Build the image:  
+cd srcs/requirements/mariadb
+docker build -t test-mariadb .
+- Run it with env vars:  
+docker run -e MYSQL_DATABASE=wordpress \  
+           -e MYSQL_USER=wpuser \  
+           -e MYSQL_PASSWORD=pass \  
+           -e MYSQL_ROOT_PASSWORD=rootpass \  
+           test-mariadb  
+- Leave this terminal open — MariaDB is running here.  
+- In a second terminal, verify it works:  
+docker ps                               # get the container id  
+docker exec -it <container_id> bash  # open a shell inside it  
+mysql -u wpuser -ppass wordpress -e "SHOW DATABASES;"  # connect as wp user  
+Expected result: you see the wordpress database listed. No errors.  
+
+What this confirmed:  
+
+Dockerfile installs MariaDB correctly  
+start.sh runs, creates the database and user from env vars  
+Container stays alive (MariaDB running as PID 1 via exec)  
+A client can connect to the server inside the same container  
 
 
 

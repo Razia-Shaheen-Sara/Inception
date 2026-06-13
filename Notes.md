@@ -170,119 +170,34 @@ bash          -> start bash shell
 
 
 ### Mariadb
+
 - MariaDB -the database server(OLD name- MySQL)
-- mysqld -the process/database that IS MariaDB running
-- mysql - the client tool to connect and send commands
-- SQL - the language of those commands
-- mysqld_safe - old wrapper script that starts mysqld
+- What it does: stores the WordPress database. Runs in its own container. WordPress connects to it on port 3306.
+- Why we initialize at all:
+- - MariaDB needs a database and a user to exist before WordPress can connect. The start.sh script does this automatically on first container startup using the env vars from .env.  
 
-- **create mariadb image**: write Dockerfile in the srcs/requirements/mairadb 
-                    cd srcs/requirements/mariadb  
-                    docker build -t test-mariadb .  
-- **Check if install worked** docker image ls
-- **Create container and start bash**:docker run -it test-mariadb bash  (Here, bash is running **INSIDE** mariadb container. these both commands are put together cause container keeps dying if there is nothing keeping it alive)(P.S. Every run create new container)  
+- what start.sh does on first startup:  
+- - starts MariaDB temporarily in background
+- - creates database and user from env vars
+- - stops it, restarts as PID 1 with exec  
 
+- Key concepts:
+- - mysqld = the actual database server process that IS MariaDB running (PID 1 in container)
+- - mysql = client tool to send SQL commands to the server
+- - /var/lib/mysql = where all database data lives → this is what the named volume saves
+- - SQL - the language of those commands
+- - mysqld_safe - old wrapper script that starts mysqld
 
-- - **INSIDE MARIADB CONTAINER**
+- **create mariadb image**: write Dockerfile(FROM, RUN, ...) in the srcs/requirements/mairadb   
+                    cd srcs/requirements/mariadb(has to read Dockerfile)  
+                    docker build -t <name> .  
+- **Check if install worked:** docker image ls (or) docker images 
+- **Create/Check container** docker run -it <name> bash  
+(Here, bash is running **INSIDE** mariadb container. these both commands are put together cause container keeps dying if there is nothing keeping it alive)
+This command overrides the CMD[.sh] part in Dockerfile, means it does not need that CMD option. it just explores the filesystem to see if the software run.  
 
-- - **Layer model (important understanding)**
- [1] FILESYSTEM LAYER (data on disk)
-      /var/lib/mysql
-      → database files stored here (inside container path)
-      → physically stored on HOST via Docker filesystem
-
-  [2] SERVER LAYER (database engine)
-      mariadbd (or mysqld)
-      → runs database system
-      → reads/writes /var/lib/mysql
-      → handles SQL requests
-
-  [3] CLIENT LAYER (user tool)
-      mysql -u root
-      → connects to server
-      → sends SQL queries
-
-  **Flow:**
-      mysql (client) → mariadbd (server) → /var/lib/mysql (data)  
-
-- - **just see what is inside**: ls
-
-- - **Check if MariaDB data directory is initialized**
-  ls /var/lib/mysql
-  (If you see folders like mysql, performance_schema → it is initialized)
-  (If empty → not initialized)
-  {/var/lib/mysql contains MariaDB system databases and engine files.
-  It is created and populated during database initialization (mysql_install_db or first server startup).}
-- - **Find system database tools**(users, permissions): which mysqld_safe  
-  (which = search for a command in the current system PATH)
-- - **Show configaration files** cat /etc/mysql/my.cnf
-- - - - **START SERVER (MUST RUN BEFORE CLIENT)** mysqld_safe--skip-networking &
-(mysqld_safe = wrapper that starts MariaDB server
---skip-networking = disables remote TCP connections (only local socket)
-& = run in background so terminal stays usable) - So it Starts Mariadb in the background
-
-- - **CONNECT CLIENT TO SERVER**
-
-  mysql -u root
-
-  → opens SQL shell; now we are inside sql shell
-  → connects the client "mysql" to running mariadbd server
-
-
-- - **TEST CONNECTION (inside SQL shell)**
-
-  SHOW DATABASES;
-  SELECT 1;
-  EXIT;(exit sql shell only)
-
-- - **INSIDE MARIADB CONTAINER: DATABASE + USER SETUP (MANUAL TEST)**
-
-- - **Purpose of this step**
-  This simulates what the Inception entrypoint script will automate.
-  On container startup, the script will:
-  → create database
-  → create users
-  → set permissions
-  → allow WordPress connection
-
-`` --- (Still inside the running container) 
-mysql -u root <<EOF
-CREATE DATABASE mydb;
-CREATE USER 'wpuser'@'%' IDENTIFIED BY 'somepassword';
-GRANT ALL PRIVILEGES ON mydb.* TO 'wpuser'@'%';
-ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpass';
-FLUSH PRIVILEGES;
-EOF
-
-- - **Verify it worked**
-mysql -u wpuser -psomepassword mydb -e "SHOW TABLES;" ``
-
-- - - **Open MariaDB shell as root**
-  mysql -u root
-
-- - - **Create database**
-  CREATE DATABASE IF NOT EXISTS mydb;
-
-  (mydb = database WordPress will use)
-
-- - - **Create WordPress user**
-  CREATE USER 'wpuser'@'%' IDENTIFIED BY 'somepassword';
-
-  ('%' = allow connections from any host inside Docker network)
-
-- - - **Give permissions**
-  GRANT ALL PRIVILEGES ON mydb.* TO 'wpuser'@'%';
-
-  (allows full access to only this database)
-
-- - - **Change root password**
-  ALTER USER 'root'@'localhost' IDENTIFIED BY 'rootpass';
-
-- - -**Apply changes**
-  FLUSH PRIVILEGES;
-
-- - **Test new user login**
-  mysql -u wpuser -psomepassword mydb -e "SHOW TABLES;"
+(P.S. Every run create new container)  
+- - **just see what is inside container**: ls
 
 - - **Key idea**
   These manual commands = what will later become an automatic entrypoint script in Docker.
@@ -291,28 +206,35 @@ mysql -u wpuser -psomepassword mydb -e "SHOW TABLES;" ``
 
 
 ## MariaDB container test
-- Build the image:  
-cd srcs/requirements/mariadb
-docker build -t test-mariadb .
-- Run it with env vars:  
-docker run -e MYSQL_DATABASE=wordpress \  
-           -e MYSQL_USER=wpuser \  
-           -e MYSQL_PASSWORD=pass \  
-           -e MYSQL_ROOT_PASSWORD=rootpass \  
-           test-mariadb  
-- Leave this terminal open — MariaDB is running here.  
-- In a second terminal, verify it works:  
-docker ps                               # get the container id  
-docker exec -it <container_id> bash  # open a shell inside it  
-mysql -u wpuser -ppass wordpress -e "SHOW DATABASES;"  # connect as wp user  
-Expected result: you see the wordpress database listed. No errors.  
 
-What this confirmed:  
+### Terminal 1 — start the container
+- docker build -t test-mariadb .
+- docker run -e MYSQL_DATABASE=wordpress \
+           -e MYSQL_USER=wpuser \
+           -e MYSQL_PASSWORD=pass \
+           -e MYSQL_ROOT_PASSWORD=rootpass \
+           test-mariadb
+
+### Terminal 2 — verify it works
+- docker ps                          # get container id
+- docker exec -it <id> mysql -u wpuser -ppass wordpress -e "SHOW DATABASES;"
+- expected: wordpress database listed, no errors
+
+- What this confirmed:  
 
 Dockerfile installs MariaDB correctly  
 start.sh runs, creates the database and user from env vars  
 Container stays alive (MariaDB running as PID 1 via exec)  
 A client can connect to the server inside the same container  
+
+
+## ARE WE DREAMING?
+
+| Level | Prompt Example | Where You Are | How You Got There | How to Exit |
+|---------|---------|---------|---------|---------|
+| **Host Machine** | `sara@MacBook %` | Your Mac/Linux host system | Open Terminal | Close terminal or `exit` |
+| **Container Shell** | `root@a3f9c12b8d01:/#` | Inside a Docker container | `docker exec -it <container> bash` | `exit` |
+| **Process Inside Container** | `MariaDB [(none)]>` | Inside a program running in the container (MySQL, MariaDB, etc.) | Run the program (`mysql`, `mariadb`, etc.) | `EXIT;`, `quit`, or `Ctrl+C` depending on the program |
 
 
 

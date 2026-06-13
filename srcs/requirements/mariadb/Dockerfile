@@ -1,4 +1,5 @@
 FROM debian:bullseye
+#(means the base image from linux's debian)
 
 RUN apt-get update && apt-get install -y \
     mariadb-server \

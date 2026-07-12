@@ -1,6 +1,6 @@
 ## DOCKER
 Docker is an open-source **containerization** platform that simplifies application deployment by packaging software and its dependencies into a standardized unit called a container.
-Unlike traditional virtual machines, Docker containers share the host OS kernel, making them more efficient and lightweight.  
+Unlike traditional virtual machines(?), Docker containers share the host OS kernel, making them more efficient and lightweight.  
 Why it exist:  
 -Reduce compatability issues  
 -enhances portability across various platforms
@@ -15,7 +15,7 @@ Images are built using a Dockerfile, which defines the instructions for creating
 ## DOCKER CONTAINER
 A Docker container is a "running instance" of a Docker image. Containers provide an "isolated runtime environment" where applications can run without 
 interfering with each other or the host system.Each container has its own filesystem, networking, and process space but shares the host kernel(core manager inside OS).
-Containers share kernel only, not OS or memory directly
+Containers share kernel(?) only, not OS or memory directly
 
 
 ## DOCKER COMPOSE
@@ -169,7 +169,7 @@ bash          -> start bash shell
 - **start a process inside a running container** docker exec ...
 
 
-### Mariadb
+## Mariadb
 
 - MariaDB -the database server(OLD name- MySQL)
 - What it does: stores the WordPress database. Runs in its own container. WordPress connects to it on port 3306.
@@ -203,17 +203,11 @@ This command overrides the CMD[.sh] part in Dockerfile, means it does not need t
   These manual commands = what will later become an automatic entrypoint script in Docker.
   Without this step WordPress cannot connect to MariaDB.
 
-
-
-## MariaDB container test
+### MariaDB container test
 
 ### Terminal 1 — start the container
-- docker build -t test-mariadb .
-- docker run -e MYSQL_DATABASE=wordpress \
-           -e MYSQL_USER=wpuser \
-           -e MYSQL_PASSWORD=pass \
-           -e MYSQL_ROOT_PASSWORD=rootpass \
-           test-mariadb
+- docker build -t <name> .
+- docker run -e MYSQL_DATABASE=wordpress -e MYSQL_USER=wpuser -e MYSQL_PASSWORD=pass -e MYSQL_ROOT_PASSWORD=rootpass <name>
 
 ### Terminal 2 — verify it works
 - docker ps                          # get container id
@@ -236,6 +230,86 @@ A client can connect to the server inside the same container
 | **Container Shell** | `root@a3f9c12b8d01:/#` | Inside a Docker container | `docker exec -it <container> bash` | `exit` |
 | **Process Inside Container** | `MariaDB [(none)]>` | Inside a program running in the container (MySQL, MariaDB, etc.) | Run the program (`mysql`, `mariadb`, etc.) | `EXIT;`, `quit`, or `Ctrl+C` depending on the program |
 
+## WordPress
+- What it does in Inception:  
+
+Runs the actual website. Uses php-fpm to execute PHP code. Listens on port 9000.  
+- What php-fpm is:
+PHP is the language WordPress is written in. php-fpm is the process that runs PHP files. 
+
+- What wp-cli is:  
+
+A command line tool that installs and configures WordPress automatically. Without it you'd have to click through the browser installer manually every time.
+- What setup.sh does on first startup:  
+Waits for MariaDB to be ready  
+Downloads WordPress files  
+Creates wp-config.php (database connection settings)  
+Installs WordPress with admin user and regular user from env vars  
+
+- For eval, one sentence:
+
+"WordPress runs php-fpm on port 9000. On first startup, setup.sh downloads WordPress and creates two users — an admin and a subscriber — from environment variables."
+
+- Set up:
+- - Step 1 — Add the Dockerfile at:  
+srcs/requirements/wordpress/Dockerfile   
+It installs php-fpm, php mysql extensions, and wp-cli.  
+- - Step 2 — Add setup.sh at:  
+srcs/requirements/wordpress/conf/setup.sh  
+- - Step 3 — Build and test   
+cd srcs/requirements/wordpress    
+docker build -t test-wordpress .  
+docker image ls  
 
 
+### Wordpress test only after make
 
+### Terminal 1
+docker run -e MYSQL_DATABASE=wordpress \
+           -e MYSQL_USER=wpuser \
+           -e MYSQL_PASSWORD=pass \
+           -e MYSQL_ROOT_PASSWORD=rootpass \
+           -e DOMAIN_NAME=yourlogin.42.fr \
+           -e WP_ADMIN_USER=webmaster \
+           -e WP_ADMIN_PASSWORD=wpAdminPass42 \
+           -e WP_ADMIN_EMAIL=webmaster@test.fr \
+           -e WP_USER=subscriber \
+           -e WP_USER_PASSWORD=subPass42 \
+           -e WP_USER_EMAIL=sub@test.fr \
+           test-wordpress
+
+### Terminal 2
+docker ps                    # get container id
+docker exec -it <id> bash
+ps aux                       # you should see php-fpm running
+
+## NGINX
+- What it does in Inception:  
+
+It's the only entry point into your infrastructure. The browser connects to NGINX on port 443 (HTTPS). NGINX either serves static files directly, or forwards PHP requests to WordPress on port 9000. Nothing else is exposed to the outside.
+- What TLS is:  
+The S in HTTPS. Encrypts the connection between browser and server. Requires a certificate. We generate a self-signed one (browser will warn "not secure" — that's normal and expected for a local project).
+- What the certificate is:  
+
+Two files — a .crt (certificate) and a .key (private key). Generated once during docker build using openssl. They live inside the container.
+- What nginx.conf does:  
+
+listen 443 ssl → accept HTTPS connections  
+ssl_protocols TLSv1.2 TLSv1.3 → subject requirement, no older protocols  
+fastcgi_pass wordpress:9000 → forward PHP files to WordPress container  
+try_files $uri $uri/ /index.php?$args → if file not found, send to WordPress  
+
+- For eval, one sentence:
+
+"NGINX is the only entrypoint on port 443. It handles TLS termination and forwards PHP requests to WordPress via fastcgi on port 9000."
+
+- How to add NGINX files to your project
+- - Step 1 — make srcs/requirements/nginx/conf/nginx.conf and put yourlogin.42.fr 
+- - Step 2 — make srcs/requirements/nginx/Dockerfile put yourlogin.42.fr  
+- - Step 3 — Build and test  
+cd srcs/requirements/nginx  
+docker build -t test-nginx .  
+Then verify: docker image ls    # test-nginx should appear
+
+- Test after building docker compose, not separately now
+docker run -p 443:443 test-nginx 

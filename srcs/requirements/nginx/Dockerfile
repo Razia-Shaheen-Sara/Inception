@@ -1,4 +1,5 @@
-FROM debian:bullseye
+FROM debian:bookworm
+#penultimate base image from linux's debian
 
 RUN apt-get update && apt-get install -y \
     nginx \

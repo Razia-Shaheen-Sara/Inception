@@ -132,6 +132,8 @@ then: be in the folder containing Dockerfile?
 ### Dockerfile vs docker-compose.yml
 Dockerfile builds one image vs docker-compose Run MULTIPLE containers together, connect networks + volumes
 
+It also makes a network container to communicate between containers
+
 
 ## DOCKER COMMANDS
 ### Basic commands:
@@ -228,7 +230,7 @@ A client can connect to the server inside the same container
 |---------|---------|---------|---------|---------|
 | **Host Machine** | `sara@MacBook %` | Your Mac/Linux host system | Open Terminal | Close terminal or `exit` |
 | **Container Shell** | `root@a3f9c12b8d01:/#` | Inside a Docker container | `docker exec -it <container> bash` | `exit` |
-| **Process Inside Container** | `MariaDB [(none)]>` | Inside a program running in the container (MySQL, MariaDB, etc.) | Run the program (`mysql`, `mariadb`, etc.) | `EXIT;`, `quit`, or `Ctrl+C` depending on the program |
+| **Process Inside Container** | `3. Remove multiple images: docker rmi image id1 image id2 image id3MariaDB [(none)]>` | Inside a program running in the container (MySQL, MariaDB, etc.) | Run the program (`mysql`, `mariadb`, etc.) | `EXIT;`, `quit`, or `Ctrl+C` depending on the program |
 
 ## WordPress
 - What it does in Inception:  
@@ -275,7 +277,7 @@ docker run -e MYSQL_DATABASE=wordpress \
            -e WP_ADMIN_EMAIL=webmaster@test.fr \
            -e WP_USER=subscriber \
            -e WP_USER_PASSWORD=subPass42 \
-           -e WP_USER_EMAIL=sub@test.fr \
+           -e WP_USER_EMAIL=sub@t3. Remove multiple images: docker rmi image id1 image id2 image id3est.fr \
            test-wordpress
 
 ### Terminal 2
@@ -313,3 +315,155 @@ Then verify: docker image ls    # test-nginx should appear
 
 - Test after building docker compose, not separately now
 docker run -p 443:443 test-nginx 
+## Role of the parts:
+- Docker → only creates and connects the containers (NGINX, WordPress, MariaDB). It does not create website content.
+- NGINX → receives HTTPS requests and passes them to WordPress.
+- WordPress → generates the HTML page using PHP.
+- MariaDB → stores the WordPress data (settings, users, posts, pages, etc.).
+
+## Eval commands
+
+### Docker
+1. Build all images (from directory containing docker-compose.yml):
+   docker compose build
+
+2. Build one image (from directory containing Dockerfile):
+   docker build -t <image_name> .
+   (. = current directory is the build context, -t = tag/image name)
+
+3. Remove one or more images:
+   docker rmi IMAGE_ID [IMAGE_ID...]
+
+4. Remove all unused images:
+   docker image prune -a
+
+5. Start containers:
+   docker compose up
+
+6. Stop and remove containers + network:
+   docker compose down
+
+7. List images:
+   docker images
+
+8. List running containers:
+   docker ps
+
+9. Remove container:
+   docker rm CONTAINER_ID
+   docker rm -f CONTAINER_ID   # force
+
+### MariaDB
+1. Enter the MariaDB container (Linux shell):
+   docker exec -it mariadb bash
+   (-i = interactive, -t = terminal)
+
+2. Exit mariadb container: exit
+
+2. Enter the MariaDB database as root:
+   mariadb -u root -p
+   (-u = database user, -p = prompt for password)
+
+3. Enter the Mariadb database as wordpress user(but no selected database): mariadb -u wpuser -p
+
+4. show databases: SHOW DATABASES;(shows more things when wpuser vs root)
+
+5. cancel a command:\c
+
+6. Does wordpress user exist? : SELECT user, Host FROM mysql.user;(can do this as root only)
+
+7. exit from database: exit;
+
+8. Select a database for mariadb: Use <any name from database>;example- Use wordpress; 
+    terminal will show selected database like  MariaDB [(none)]> vs MariaDB [wordpress]> 
+
+      The following can be done when database selected: 
+      8.1. create a table: CREATE TABLE test( id INT);
+      8.2. Insert values: INSERT INTO test VALUES(1);
+      8.3. Show table: SHOW TABLES;
+      8.4. Show table value: SELECT * FROM test;
+      8.5. remove table: DROP TABLE test;
+
+### WordPress
+
+1. Enter the WordPress container (Linux shell):
+   docker exec -it wordpress bash
+
+2. Exit the container:
+   exit
+
+3. Current WordPress files:
+   cd /var/www/html
+
+4. List WordPress files:
+   ls
+
+5. Check wp-config.php:
+   cat wp-config.php
+
+6. Check PHP is installed:
+   php -v
+
+7. Check PHP-FPM is running:
+   ps aux | grep php-fpm
+
+8. Is WordPress actually installed in /var/www/html?
+  ls -la /var/www/html (expected:wp-admin wp-content wp-includes wp-config.php)
+
+9. Is wordpress connected to mariadb?
+    grep DB_ /var/www/html/wp-config.php (full adress needs to be written)
+    Expected: 
+    root@bc0289e845a7:/var/www/html# grep DB_ /var/www/html/wp-config.php
+  define( 'DB_NAME', 'wordpress' );
+  define( 'DB_USER', 'wpuser' );
+  define( 'DB_PASSWORD', 'sara_wp' );
+  define( 'DB_HOST', 'mariadb' );
+  define( 'DB_CHARSET', 'utf8' );
+  define( 'DB_COLLATE', '' );
+
+
+### nginx
+1. enter nginx: docker exec -it nginx bash
+
+## Evaluation tests
+
+1. curl -k -I https://localhost:8443 
+
+proves:
+
+  NGINX container is running
+  Port 8443 is exposed from Docker to your machine
+  HTTPS works
+  SSL certificate is accepted (with -k ignoring the self-signed warning)
+  NGINX can return a response
+
+  Example success:
+
+  HTTP/1.1 200 OK
+  Server: nginx
+
+  from browser: https://localhost:8443 then move advanced to ignore the warning
+
+
+The FLOW: Browser requests a page → NGINX receives HTTPS request → forwards to WordPress/PHP-FPM → WordPress gets data from MariaDB and dynamically generates HTML → NGINX sends it back to the browser.
+
+  2. curl -k --resolve rshaheen.42.fr:8443:127.0.0.1 https://rshaheen.42.fr:8443
+
+      --resolve temporarily tells curl:
+    "When I request rshaheen.42.fr, pretend it points to 127.0.0.1"
+
+    It checks that:
+    domain name works with HTTPS
+    NGINX accepts the correct hostname
+    your SSL certificate matches the domain name
+
+
+3. Check: "container that contains WordPress + php-fpm (it must be installed and configured) only, without nginx:"
+  - 3.1. build only wordpress: go to srcs/requi/wordpress and docker build -t name .
+  - 3.2. bypass the .sh and enter  wordpress: docker run -it --entrypoint bash name
+  - 3.3. check php version: php -v
+  - 3.4. check php-fpm version: php-fpm -v
+  - 3.5. check php-fp8.2 exists: php-fpm8.2 -v
+  - 3.6. check php-fpm configuaratuion: php-fpm8.2 -t
+  - 3.7. check php-fpm can run: php-fpm8.2 -F
+  - check ngnix is not there: which nginx and nginx -v (in and out of the wordpress container)

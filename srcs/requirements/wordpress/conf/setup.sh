@@ -41,8 +41,8 @@ if [ ! -f "$WP_DIR/wp-config.php" ]; then
     chown -R www-data:www-data "$WP_DIR"
 fi
 
-sed -i 's|listen = /run/php/php7.4-fpm.sock|listen = 9000|' \
-    /etc/php/7.4/fpm/pool.d/www.conf
+sed -i 's|listen = /run/php/php8.2-fpm.sock|listen = 9000|' \
+    /etc/php/8.2/fpm/pool.d/www.conf
 
 mkdir -p /run/php
-exec php-fpm7.4 --nodaemonize
+exec php-fpm8.2 --nodaemonize

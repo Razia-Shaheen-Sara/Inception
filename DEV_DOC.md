@@ -1,6 +1,7 @@
 ## Prerequisites
 - Docker + Docker Compose on the VM.
-- `rshaheen.42.fr` resolving to the VM's local IP.
+- open `sudo nano /etc/hosts`
+- Add: 127.0.0.1 rshaheen.42.fr
 
 ## Setup from scratch
 1. Clone the repo.
@@ -9,11 +10,17 @@
    - `secrets/db_root_password.txt`
    - `secrets/credentials.txt` → `WP_ADMIN_PASSWORD=...` / `WP_USER_PASSWORD=...`
 
-## Build & launch
+## Build & launch with Makefile
 - `make` — builds the three images and starts the stack.
 - `make clean` — stops containers, removes the project's network.
 - `make fclean` — `clean` + removes this project's images and volumes.
-- `make re` — `fclean` + `all`.
+- `make re` — `fclean` + `all`
+
+## Build and launch with Docker Compose
+Docker Compose can also be used directly from the directory containing docker-compose.yml:
+- `docker compose up --build` — Start containers with building images
+- `docker compose up -d` — Start containers
+- `docker compose down` — Stop the stack
 
 ## Managing containers & volumes
 Run Docker Compose commands from the directory containing the docker-compose.yml file.
@@ -25,4 +32,3 @@ Run Docker Compose commands from the directory containing the docker-compose.yml
 ## Data persistence
 - `wordpress_data` and `mariadb_data` are named volumes, mapped to `/home/rshaheen/data/` on the host.
 - Data survives `make clean` and rebuilds; only `make fclean` removes it
-

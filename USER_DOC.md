@@ -20,5 +20,5 @@
 
 
 ## Checking services
-docker-compose ps
+`docker-compose ps`
 (The NGINX, WordPress, and MariaDB containers should show the status Up)

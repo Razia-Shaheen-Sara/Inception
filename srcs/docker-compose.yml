@@ -50,8 +50,19 @@ secrets:
     file: ../secrets/credentials.txt
 
 volumes:
+  volumes:
   mariadb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/rshaheen/data/mariadb
   wordpress_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/rshaheen/data/wordpress
 
 #Create a private bridge network for my project
 networks:

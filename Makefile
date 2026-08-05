@@ -1,15 +1,18 @@
+NAME = inception
+COMPOSE = docker-compose -f srcs/docker-compose.yml
+
 all:
-	docker compose -f srcs/docker-compose.yml up --build -d
+	# Build images if needed and start containers in the background
+	$(COMPOSE) up --build -d
 
-down:
-	docker compose -f srcs/docker-compose.yml down
-
-clean: down
-	docker system prune -af
+clean:
+	# Stop and remove containers + project network
+	$(COMPOSE) down
 
 fclean: clean
-	docker volume rm mariadb_data wordpress_data 2>/dev/null || true
+	# Remove this project's containers, network, images and volumes only
+	$(COMPOSE) down --rmi all -v
 
 re: fclean all
 
-.PHONY: all down clean fclean re
+.PHONY: all clean fclean re

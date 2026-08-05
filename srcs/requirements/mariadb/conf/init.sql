@@ -1,2 +1,0 @@
--- This file is sourced by start.sh at runtime using env vars
--- Do not put credentials here; they are injected via start.sh

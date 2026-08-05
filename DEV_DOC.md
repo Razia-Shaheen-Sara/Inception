@@ -18,9 +18,9 @@
 
 ## Build and launch with Docker Compose
 Docker Compose can also be used directly from the directory containing docker-compose.yml:
-- `docker compose up --build` — Start containers with building images
-- `docker compose up -d` — Start containers
-- `docker compose down` — Stop the stack
+- `docker-compose up --build` — Start containers with building images
+- `docker-compose up -d` — Start containers
+- `docker-compose down` — Stop the stack
 
 ## Managing containers & volumes
 Run Docker Compose commands from the directory containing the docker-compose.yml file.

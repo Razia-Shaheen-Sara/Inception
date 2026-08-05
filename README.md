@@ -9,7 +9,7 @@ WordPress files and the database are stored in two named volumes, keeping the da
 
 **Design choices**
 - **VMs vs Docker**: VMs virtualize a full OS per service; containers are just processes, so they're lighter and faster to start.
-- **Secrets vs env vars**:secrets are mounted as files under `/secrets` only in the containers that need them. Passwords use secrets, non-sensitive config uses `.env`.
+- **Secrets vs env vars**: `.env` values become plain environment variables inside the container, so anything reading that container's config can see them. Secrets are mounted as private files under `/run/secrets`, readable only inside the container that needs them. Passwords use secrets, non-sensitive config uses `.env`.
 - **Docker network vs host network**: Using the host network removes container isolation and exposes services directly on the machine. A private bridge network (inception) allows containers to communicate safely while only exposing NGINX to the outside.
 - **Volumes vs bind mounts**: Bind mounts depend on specific host paths and permissions. Named volumes are managed by Docker and keep data safe even when containers are removed or recreated
 

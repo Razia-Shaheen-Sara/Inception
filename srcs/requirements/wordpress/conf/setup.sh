@@ -32,13 +32,7 @@ if [ ! -f "$WP_DIR/wp-config.php" ]; then
         --dbpass="${DB_PASSWORD}" \
         --dbhost=mariadb:3306 \
         --allow-root
-
-    #wp config set writes into the wp-config.php file. The --raw flag tells WP-CLI to treat the value as raw PHP code, 
-    #so it doesn't get quoted or escaped. This is necessary for the $_SERVER['HTTP_HOST'] variable to work correctly.
-    wp config set WP_HOME "'https://' . \$_SERVER['HTTP_HOST']" --raw --path="$WP_DIR" --allow-root
-    wp config set WP_SITEURL "'https://' . \$_SERVER['HTTP_HOST']" --raw --path="$WP_DIR" --allow-root
     
-    # Install WordPress and create the administrator account.
     wp core install \
         --path="$WP_DIR" \
         --url="https://${DOMAIN_NAME}" \

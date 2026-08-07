@@ -14,8 +14,9 @@ WordPress files and the database are stored in two named volumes, keeping the da
 - **Volumes vs bind mounts**: Bind mounts depend on specific host paths and permissions. Named volumes are managed by Docker and keep data safe even when containers are removed or recreated
 
 ## Instructions
-1. Create `secrets/`in the root of inception
-2. `make` to build and start.
+1. `git clone` <copied-url> <name> && cd <name>
+2. Create `secrets/`in the root of inception
+3. `make` to build and start.
 4. Visit `https://rshaheen.42.fr` in the vm
 5. `make clean` stops containers, `make fclean` removes images/volumes, `make re` rebuilds from scratch.
 

@@ -13,7 +13,7 @@
 ## Build & launch with Makefile
 - `make` — builds the three images and starts the stack.
 - `make clean` — stops containers, removes the project's network.
-- `make fclean` — `clean` + removes this project's images and volumes.
+- `make fclean` — `clean` + removes this project's images and volume objects
 - `make re` — `fclean` + `all`
 
 ## Build and launch with Docker Compose
@@ -31,4 +31,5 @@ Run Docker Compose commands from the directory containing the docker-compose.yml
 
 ## Data persistence
 - `wordpress_data` and `mariadb_data` are named volumes, mapped to `/home/rshaheen/data/` on the host.
-- Data survives `make clean` and rebuilds; only `make fclean` removes it
+- Data survives `make clean`, and `make fclean` and rebuilds. 
+- `make fclean` removes the docker volume objects but not the files living in /home/rshaheen/data/

@@ -3,7 +3,6 @@ COMPOSE = docker-compose -f srcs/docker-compose.yml
 
 all:
 	# Build images if needed and start containers in the background
-	mkdir -p /home/rshaheen/data/mariadb /home/rshaheen/data/wordpress
 	$(COMPOSE) up --build -d
 
 clean:

@@ -32,7 +32,9 @@ if [ ! -f "$WP_DIR/wp-config.php" ]; then
         --dbpass="${DB_PASSWORD}" \
         --dbhost=mariadb:3306 \
         --allow-root
-    
+    # Set the WordPress home and site URL dynamically based on the HTTP_HOST header or the DOMAIN_NAME environment variable.
+    wp config set WP_HOME 'isset($_SERVER["HTTP_HOST"]) ? "https://".$_SERVER["HTTP_HOST"] : "https://".getenv("DOMAIN_NAME")' --raw --path="$WP_DIR" --allow-root
+    wp config set WP_SITEURL 'isset($_SERVER["HTTP_HOST"]) ? "https://".$_SERVER["HTTP_HOST"] : "https://".getenv("DOMAIN_NAME")' --raw --path="$WP_DIR" --allow-root
     wp core install \
         --path="$WP_DIR" \
         --url="https://${DOMAIN_NAME}" \
@@ -55,7 +57,7 @@ fi
 #change the PHP-FPM socket to listen on port 9000 instead of a Unix socket.
 #A Unix socket is a way for two programs on the same operating system to communicate.
 #Nginx connects to PHP-FPM through wordpress:9000.
-sed -i 's|listen = /run/php/php8.2-fpm.sock|listen = 9000|' \
+sed -i 's|listen = /run/php/php8.2-fpm.sock|listen = 9001|' \
     /etc/php/8.2/fpm/pool.d/www.conf
 
 mkdir -p /run/php

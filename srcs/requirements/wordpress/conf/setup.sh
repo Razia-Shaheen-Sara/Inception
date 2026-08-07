@@ -57,7 +57,7 @@ fi
 #change the PHP-FPM socket to listen on port 9000 instead of a Unix socket.
 #A Unix socket is a way for two programs on the same operating system to communicate.
 #Nginx connects to PHP-FPM through wordpress:9000.
-sed -i 's|listen = /run/php/php8.2-fpm.sock|listen = 9001|' \
+sed -i 's|listen = /run/php/php8.2-fpm.sock|listen = 9000|' \
     /etc/php/8.2/fpm/pool.d/www.conf
 
 mkdir -p /run/php

@@ -33,6 +33,11 @@ if [ ! -f "$WP_DIR/wp-config.php" ]; then
         --dbhost=mariadb:3306 \
         --allow-root
     
+    # Build the site url from the port the browser actually used,
+    # so changing the nginx port never needs a database edit.
+    wp config set WP_HOME 'isset($_SERVER["HTTP_HOST"]) ? "https://".$_SERVER["HTTP_HOST"] : "https://".getenv("DOMAIN_NAME")' --raw --path="$WP_DIR" --allow-root
+    wp config set WP_SITEURL 'isset($_SERVER["HTTP_HOST"]) ? "https://".$_SERVER["HTTP_HOST"] : "https://".getenv("DOMAIN_NAME")' --raw --path="$WP_DIR" --allow-root
+
     wp core install \
         --path="$WP_DIR" \
         --url="https://${DOMAIN_NAME}" \
